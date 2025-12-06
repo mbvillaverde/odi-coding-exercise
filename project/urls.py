@@ -25,5 +25,5 @@ router.register(r"patient-status", PatientStatusViewSet, basename="patient-statu
 
 urlpatterns = [
     path("api-auth/", include("rest_framework.urls")),
-    path("api/", include(router.urls)),
+    path("", include(router.urls)),
 ]
