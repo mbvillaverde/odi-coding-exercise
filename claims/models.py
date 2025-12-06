@@ -1,33 +1,12 @@
 import uuid
 
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 
-from tenancy.models import TenantAwareModel
+from tenancy.models import TenantModel, TenantUserManager
 
 
-class Organization(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
-
-
-class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError("The Email field must be set")
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, TenantModel):
     class Role(models.TextChoices):
         ADMIN = "admin", "Admin"
         CLAIMS_PROCESSOR = "claims_processor", "Claims Processor"
@@ -35,7 +14,6 @@ class User(AbstractBaseUser):
         PATIENT = "patient", "Patient"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
@@ -43,15 +21,16 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    USERNAME_FIELD = "email"
+    objects = TenantUserManager()
 
-    objects = UserManager()
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["role"]
 
     def __str__(self):
-        return self.email
+        return f"<User {self.id}: {self.email}>"
 
 
-class Patient(TenantAwareModel):
+class Patient(TenantModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
@@ -60,10 +39,10 @@ class Patient(TenantAwareModel):
     phone = models.CharField(max_length=50)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"<Patient {self.id}: {self.email}>"
 
 
-class Claim(TenantAwareModel):
+class Claim(TenantModel):
     class Status(models.TextChoices):
         SUBMITTED = "submitted", "Submitted"
         UNDER_REVIEW = "under_review", "Under Review"
@@ -97,10 +76,10 @@ class Claim(TenantAwareModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Claim {self.id} - {self.status}"
+        return f"<Claim {self.id}: {self.diagnosis_code} | {self.procedure_code} | {self.status}>"
 
 
-class PatientStatus(TenantAwareModel):
+class PatientStatus(TenantModel):
     class StatusType(models.TextChoices):
         ADMISSION = "admission", "Admission"
         DISCHARGE = "discharge", "Discharge"
@@ -115,4 +94,4 @@ class PatientStatus(TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.patient} - {self.status_type}"
+        return f"<PatientStatus {self.id}: {self.patient} | {self.status_type}>"

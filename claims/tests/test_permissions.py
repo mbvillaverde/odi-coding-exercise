@@ -3,7 +3,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from claims.models import Claim, Organization, Patient
+from claims.models import Claim, Patient
+from tenancy.models import Organization
 from tenancy.utils import reset_current_tenant, set_current_tenant
 
 User = get_user_model()

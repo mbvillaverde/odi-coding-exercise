@@ -14,14 +14,18 @@ logger = logging.getLogger(__name__)
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
 )
-def process_patient_admission(patient_id, organization_id):
+def process_patient_admission(self, patient_id, organization_id):
     with transaction.atomic():
         # Find all submitted claims for patient
-        claims = Claim.objects.filter(
-            patient_id=patient_id,
-            organization_id=organization_id,
-            status=Claim.Status.SUBMITTED,
-        ).select_for_update()
+        claims = (
+            Claim.objects.select_for_update()
+            .filter(
+                patient_id=patient_id,
+                organization_id=organization_id,
+                status=Claim.Status.SUBMITTED,
+            )
+            .only("status")
+        )
 
         # Mark them as under review
         count = claims.update(status=Claim.Status.UNDER_REVIEW)
@@ -36,14 +40,18 @@ def process_patient_admission(patient_id, organization_id):
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
 )
-def process_patient_discharge(patient_id, organization_id):
+def process_patient_discharge(self, patient_id, organization_id):
     with transaction.atomic():
         # Find all pending (submitted, under review) claims for patient
-        claims = Claim.objects.filter(
-            patient_id=patient_id,
-            organization_id=organization_id,
-            status__in=[Claim.Status.SUBMITTED, Claim.Status.UNDER_REVIEW],
-        ).select_for_update()
+        claims = (
+            Claim.objects.select_for_update()
+            .filter(
+                patient_id=patient_id,
+                organization_id=organization_id,
+                status__in=[Claim.Status.SUBMITTED, Claim.Status.UNDER_REVIEW],
+            )
+            .only("status", "approval_reason")
+        )
 
         # Move to approved (auto-finalize)
         count = claims.update(
@@ -60,14 +68,18 @@ def process_patient_discharge(patient_id, organization_id):
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
 )
-def process_treatment_initiated(patient_id, organization_id, treatment_type):
+def process_treatment_initiated(self, patient_id, organization_id, treatment_type):
     with transaction.atomic():
         # Find related claims (assuming all submitted claims)
-        claims = Claim.objects.filter(
-            patient_id=patient_id,
-            organization_id=organization_id,
-            status=Claim.Status.SUBMITTED,
-        ).select_for_update()
+        claims = (
+            Claim.objects.select_for_update()
+            .filter(
+                patient_id=patient_id,
+                organization_id=organization_id,
+                status=Claim.Status.SUBMITTED,
+            )
+            .only("status")
+        )
 
         # Update status (assumed that all submitted claims will be set into under review)
         count = claims.update(status=Claim.Status.UNDER_REVIEW)

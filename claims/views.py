@@ -97,11 +97,11 @@ class PatientStatusViewSet(viewsets.ModelViewSet):
 
         match instance.status_type:
             case PatientStatus.StatusType.ADMISSION:
-                process_patient_admission.delay(patient_id, organization_id)
+                process_patient_admission.delay_on_commit(patient_id, organization_id)
             case PatientStatus.StatusType.DISCHARGE:
-                process_patient_discharge.delay(patient_id, organization_id)
+                process_patient_discharge.delay_on_commit(patient_id, organization_id)
             case PatientStatus.StatusType.TREATMENT_INITIATED:
-                process_treatment_initiated.delay(
+                process_treatment_initiated.delay_on_commit(
                     patient_id,
                     organization_id,
                     instance.details.get("treatment_type", "N/A"),
