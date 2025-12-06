@@ -4,6 +4,21 @@ from claims.models import User
 
 
 class CanManageClaim(permissions.BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        if request.method == "POST":
+            return user.role in (
+                User.Role.ADMIN,
+                User.Role.CLAIMS_PROCESSOR,
+                User.Role.PROVIDER,
+            )
+
+        return True
+
     def has_object_permission(self, request, view, obj):
         user = request.user
         match user.role:

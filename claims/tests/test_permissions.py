@@ -63,7 +63,7 @@ class PermissionTestCase(TestCase):
     def test_processor_can_update_assigned_claim(self):
         self.client.force_login(user=self.processor)
         response = self.client.patch(
-            f"/api/claims/{self.claim.id}/", {"status": "under_review"}
+            f"/claims/{self.claim.id}/", {"status": "under_review"}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.claim.refresh_from_db()
@@ -73,13 +73,13 @@ class PermissionTestCase(TestCase):
         self.client.force_login(user=self.other_processor)
         # It returns 404 because get_queryset filters it out for processors
         response = self.client.patch(
-            f"/api/claims/{self.claim.id}/", {"status": "under_review"}
+            f"/claims/{self.claim.id}/", {"status": "under_review"}
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_provider_cannot_update_claim(self):
         self.client.force_login(user=self.provider)
         response = self.client.patch(
-            f"/api/claims/{self.claim.id}/", {"status": "under_review"}
+            f"/claims/{self.claim.id}/", {"status": "under_review"}
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

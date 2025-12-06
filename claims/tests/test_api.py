@@ -73,14 +73,14 @@ class ClaimsAPITestCase(TestCase):
     def test_tenant_isolation_queryset(self):
         # Simulate request from User 1
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], str(self.claim1.id))
 
         # Simulate request from User 2
         self.client.force_login(user=self.user2)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], str(self.claim2.id))
@@ -88,7 +88,7 @@ class ClaimsAPITestCase(TestCase):
     def test_cross_tenant_access_denied(self):
         # User 1 tries to access Claim 2
         self.client.force_login(user=self.user1)
-        response = self.client.get(f"/api/claims/{self.claim2.id}/")
+        response = self.client.get(f"/claims/{self.claim2.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_claim_sets_tenant(self):
@@ -102,7 +102,7 @@ class ClaimsAPITestCase(TestCase):
             "submitted_date": "2023-01-02",
             "service_date": "2023-01-02",
         }
-        response = self.client.post("/api/claims/", data)
+        response = self.client.post("/claims/", data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         claim_id = response.data["id"]
 
@@ -116,7 +116,7 @@ class ClaimsAPITestCase(TestCase):
         """User from Org1 tries to update claim from Org2"""
         self.client.force_login(user=self.user1)
         response = self.client.patch(
-            f"/api/claims/{self.claim2.id}/", {"status": "approved"}
+            f"/claims/{self.claim2.id}/", {"status": "approved"}
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -129,7 +129,7 @@ class ClaimsAPITestCase(TestCase):
     def test_cross_tenant_delete_denied(self):
         """User from Org1 tries to delete claim from Org2"""
         self.client.force_login(user=self.user1)
-        response = self.client.delete(f"/api/claims/{self.claim2.id}/")
+        response = self.client.delete(f"/claims/{self.claim2.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # Verify claim still exists
@@ -164,17 +164,17 @@ class ClaimsAPITestCase(TestCase):
 
         # Provider1 should not see Provider2's claims
         self.client.force_login(user=provider1)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 0)
 
         # Provider1 should not access Provider2's claim directly
-        response = self.client.get(f"/api/claims/{claim_provider2.id}/")
+        response = self.client.get(f"/claims/{claim_provider2.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # Provider2 should see their own claim
         self.client.force_login(user=provider2)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
@@ -210,13 +210,13 @@ class ClaimsAPITestCase(TestCase):
 
         # Processor1 should only see their assigned claim
         self.client.force_login(user=processor1)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], str(self.claim1.id))
 
         # Processor1 cannot access Processor2's claim
-        response = self.client.get(f"/api/claims/{claim_for_processor2.id}/")
+        response = self.client.get(f"/claims/{claim_for_processor2.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_patient_can_only_see_own_claims(self):
@@ -247,13 +247,13 @@ class ClaimsAPITestCase(TestCase):
 
         # Patient should only see their own claims
         self.client.force_login(user=patient_user)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["patient"], self.patient1.id)
 
         # Patient cannot access other patient's claims
-        response = self.client.get(f"/api/claims/{claim_patient3.id}/")
+        response = self.client.get(f"/claims/{claim_patient3.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_patient_cannot_update_claims(self):
@@ -269,7 +269,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=patient_user)
         response = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "approved"}
+            f"/claims/{self.claim1.id}/", {"status": "approved"}
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -293,7 +293,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=provider)
-        response = self.client.patch(f"/api/claims/{claim.id}/", {"status": "approved"})
+        response = self.client.patch(f"/claims/{claim.id}/", {"status": "approved"})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_modify_approved_claims(self):
@@ -305,7 +305,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "rejected"}
+            f"/claims/{self.claim1.id}/", {"status": "rejected"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -324,7 +324,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "rejected"}
+            f"/claims/{self.claim1.id}/", {"status": "rejected"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -352,13 +352,13 @@ class ClaimsAPITestCase(TestCase):
         # Processor can update assigned claim
         self.client.force_login(user=processor)
         response = self.client.patch(
-            f"/api/claims/{claim_assigned.id}/", {"status": "approved"}
+            f"/claims/{claim_assigned.id}/", {"status": "approved"}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Processor cannot update unassigned claim (claim1 has no assigned processor)
         response = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "approved"}
+            f"/claims/{self.claim1.id}/", {"status": "approved"}
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -377,7 +377,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.get(
-            "/api/claims/", {"from_date": "2023-01-10", "to_date": "2023-01-20"}
+            "/claims/", {"from_date": "2023-01-10", "to_date": "2023-01-20"}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
@@ -399,7 +399,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/", {"status": "approved"})
+        response = self.client.get("/claims/", {"status": "approved"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["status"], Claim.Status.APPROVED)
@@ -424,9 +424,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get(
-            "/api/claims/", {"patient_id": str(self.patient1.id)}
-        )
+        response = self.client.get("/claims/", {"patient_id": str(self.patient1.id)})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["patient"], self.patient1.id)
@@ -451,7 +449,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/", {"provider_id": str(self.user1.id)})
+        response = self.client.get("/claims/", {"provider_id": str(self.user1.id)})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["provider"], self.user1.id)
@@ -471,7 +469,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.get(
-            "/api/claims/", {"min_amount": "50", "max_amount": "500"}
+            "/claims/", {"min_amount": "50", "max_amount": "500"}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
@@ -491,7 +489,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/", {"ordering": "service_date"})
+        response = self.client.get("/claims/", {"ordering": "service_date"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         dates = [claim["service_date"] for claim in response.data["results"]]
         self.assertEqual(dates, sorted(dates))
@@ -510,7 +508,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/", {"ordering": "amount"})
+        response = self.client.get("/claims/", {"ordering": "amount"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         amounts = [Decimal(claim["amount"]) for claim in response.data["results"]]
         self.assertEqual(amounts, sorted(amounts))
@@ -530,7 +528,7 @@ class ClaimsAPITestCase(TestCase):
         reset_current_tenant()
 
         self.client.force_login(user=self.user1)
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("next", response.data)
         self.assertIn("previous", response.data)
@@ -551,7 +549,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.post(
-            "/api/claims/bulk-status-update/",
+            "/claims/bulk-status-update/",
             {
                 "claim_ids": [
                     str(self.claim1.id),
@@ -589,7 +587,7 @@ class ClaimsAPITestCase(TestCase):
 
         self.client.force_login(user=self.user1)
         response = self.client.post(
-            "/api/claims/bulk-status-update/",
+            "/claims/bulk-status-update/",
             {
                 "claim_ids": [str(self.claim1.id), str(claim2.id)],
                 "status": "under_review",
@@ -611,7 +609,7 @@ class ClaimsAPITestCase(TestCase):
             "submitted_date": "2023-01-02",
             "service_date": "2023-01-02",
         }
-        response = self.client.post("/api/claims/", data)
+        response = self.client.post("/claims/", data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_claim_with_invalid_amount(self):
@@ -625,12 +623,12 @@ class ClaimsAPITestCase(TestCase):
             "submitted_date": "2023-01-02",
             "service_date": "2023-01-02",
         }
-        response = self.client.post("/api/claims/", data)
+        response = self.client.post("/claims/", data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_unauthenticated_access_denied(self):
         """Unauthenticated users cannot access claims"""
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_concurrent_update_handling(self):
@@ -650,10 +648,10 @@ class ClaimsAPITestCase(TestCase):
 
         # Simulate two concurrent updates
         response1 = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "under_review"}
+            f"/claims/{self.claim1.id}/", {"status": "under_review"}
         )
         response2 = self.client.patch(
-            f"/api/claims/{self.claim1.id}/", {"status": "approved"}
+            f"/claims/{self.claim1.id}/", {"status": "approved"}
         )
 
         # Both should succeed (last one wins in this implementation)
@@ -674,7 +672,7 @@ class ClaimsAPITestCase(TestCase):
             "occurred_at": timezone.now().isoformat(),
             "details": {"facility": "Test Hospital"},
         }
-        response = self.client.post("/api/patient-status/", data, format="json")
+        response = self.client.post("/patient-status/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         # Task should be called with patient_id and organization_id
         mock_task.assert_called_once()
@@ -699,13 +697,13 @@ class ClaimsAPITestCase(TestCase):
 
         # User1 should only see patient1's history
         self.client.force_login(user=self.user1)
-        response = self.client.get(f"/api/patient-status/history/{self.patient1.id}/")
+        response = self.client.get(f"/patient-status/history/{self.patient1.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], str(status1.id))
 
         # User1 should not see patient2's history
-        response = self.client.get(f"/api/patient-status/history/{self.patient2.id}/")
+        response = self.client.get(f"/patient-status/history/{self.patient2.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
 
@@ -730,7 +728,7 @@ class ClaimsAPITestCase(TestCase):
         import time
 
         start = time.perf_counter()
-        response = self.client.get("/api/claims/")
+        response = self.client.get("/claims/")
         duration = time.perf_counter() - start
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -750,7 +748,7 @@ class ClaimsAPITestCase(TestCase):
             "submitted_date": "2023-01-02",
             "service_date": "2023-01-02",
         }
-        response = self.client.post("/api/claims/", data)
+        response = self.client.post("/claims/", data)
 
         if response.status_code == status.HTTP_201_CREATED:
             # If it was created, verify it's assigned to correct org
