@@ -85,7 +85,7 @@ class PatientStatusViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="history/(?P<patient_id>[^/.]+)")
     def history(self, request, patient_id=None):
-        queryset = self.get_queryset().filter(patient_id=patient_id)
+        queryset = self.get_queryset().filter(patient__id=patient_id)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

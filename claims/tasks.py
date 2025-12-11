@@ -20,8 +20,8 @@ def process_patient_admission(self, patient_id, organization_id):
         claims = (
             Claim.objects.select_for_update()
             .filter(
-                patient_id=patient_id,
-                organization_id=organization_id,
+                patient__id=patient_id,
+                organization__id=organization_id,
                 status=Claim.Status.SUBMITTED,
             )
             .only("status")
@@ -46,8 +46,8 @@ def process_patient_discharge(self, patient_id, organization_id):
         claims = (
             Claim.objects.select_for_update()
             .filter(
-                patient_id=patient_id,
-                organization_id=organization_id,
+                patient__id=patient_id,
+                organization__id=organization_id,
                 status__in=[Claim.Status.SUBMITTED, Claim.Status.UNDER_REVIEW],
             )
             .only("status", "approval_reason")
@@ -74,8 +74,8 @@ def process_treatment_initiated(self, patient_id, organization_id, treatment_typ
         claims = (
             Claim.objects.select_for_update()
             .filter(
-                patient_id=patient_id,
-                organization_id=organization_id,
+                patient__id=patient_id,
+                organization__id=organization_id,
                 status=Claim.Status.SUBMITTED,
             )
             .only("status")
