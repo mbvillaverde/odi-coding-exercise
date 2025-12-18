@@ -2,6 +2,7 @@ import logging
 
 from celery import shared_task
 from django.db import transaction
+from django.utils import timezone
 
 from claims.models import Claim
 
@@ -88,3 +89,21 @@ def process_treatment_initiated(self, patient_id, organization_id, treatment_typ
         logger.info(
             f"Treatment {treatment_type}: Set {count} claims as UNDER_REVIEW for patient {patient_id}"
         )
+
+
+@shared_task
+def process_expired_claims():
+    # NOTE: This function will process claims that are older than 30 days and set it to EXPIRED
+    with transaction.atomic():
+        expiry_date = timezone.now() - timezone.timedelta(days=30)
+        claims = (
+            Claim.objects.select_for_update()
+            .filter(
+                submitted_date__lte=expiry_date,
+                status__in=[Claim.Status.SUBMITTED, Claim.Status.UNDER_REVIEW],
+            )
+            .only("status")
+        )
+
+        count = claims.update(status=Claim.Status.EXPIRED)
+        logger.info(f"Set {count} claims as EXPIRED")

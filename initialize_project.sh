@@ -18,5 +18,5 @@ uv run manage.py populate_data
 uv run coverage run manage.py test
 uv run coverage report
 
-uv run celery -A project worker -l info --detach
+uv run celery -A project worker -Bl info --detach
 uv run manage.py runserver

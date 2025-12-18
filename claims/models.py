@@ -49,6 +49,7 @@ class Claim(TenantModel):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
         PAID = "paid", "Paid"
+        EXPIRED = "expired", "Expired"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)

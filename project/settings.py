@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from celery.beat import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -149,3 +150,11 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+
+# NOTE: Sets a periodic run every midnight to process expired claims
+CELERY_BEAT_SCHEDULE = {
+    "process_expired_claims": {
+        "task": "claims.tasks.process_expired_claims",
+        "schedule": crontab(minute=0, hour=0),
+    },
+}

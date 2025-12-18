@@ -17,11 +17,23 @@ class ClaimSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(
         max_digits=10, decimal_places=2, min_value=1, max_value=10_000_000
     )
+    patient_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Claim
         fields = "__all__"
-        read_only_fields = ("organization", "created_at", "updated_at", "status")
+        read_only_fields = (
+            "organization",
+            "created_at",
+            "updated_at",
+            "status",
+            "patient_details",
+        )
+
+    def get_patient_details(self, instance):
+        # NOTE: To create a nested details for foreign object, use SerializerMethodField
+        #       combined with Model Serializer
+        return PatientSerializer(instance.patient).data
 
 
 class ClaimStatusUpdateSerializer(serializers.ModelSerializer):
